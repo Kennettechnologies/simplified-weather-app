@@ -1,0 +1,10 @@
+project_id = "fxwjxljewokzfafuwsmi"
+
+[functions.weather]
+verify_jwt = false
+
+[functions.weather-assistant]
+verify_jwt = false
+
+[functions.get-mapbox-token]
+verify_jwt = false

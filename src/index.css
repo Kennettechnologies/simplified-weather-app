@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 210 100% 56%;
+
+    --radius: 0.75rem;
+
+    /* Weather-themed colors */
+    --sunny: 45 100% 60%;
+    --cloudy: 210 20% 70%;
+    --rainy: 210 80% 45%;
+    --stormy: 240 30% 25%;
+    --snowy: 200 20% 90%;
+    --clear-night: 240 40% 15%;
+
+    /* Weather gradients */
+    --gradient-sunny: linear-gradient(135deg, hsl(45 100% 60%), hsl(35 100% 70%));
+    --gradient-cloudy: linear-gradient(135deg, hsl(210 20% 80%), hsl(220 15% 85%));
+    --gradient-rainy: linear-gradient(135deg, hsl(210 80% 45%), hsl(220 70% 35%));
+    --gradient-stormy: linear-gradient(135deg, hsl(240 30% 25%), hsl(250 40% 15%));
+    --gradient-night: linear-gradient(135deg, hsl(240 40% 15%), hsl(250 50% 10%));
+
+    /* Weather shadows */
+    --shadow-weather: 0 4px 20px hsl(var(--primary) / 0.15);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.3);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 210 100% 56%;
+
+    /* Dark mode weather gradients */
+    --gradient-sunny: linear-gradient(135deg, hsl(45 90% 50%), hsl(35 90% 60%));
+    --gradient-cloudy: linear-gradient(135deg, hsl(210 15% 30%), hsl(220 10% 35%));
+    --gradient-rainy: linear-gradient(135deg, hsl(210 60% 25%), hsl(220 50% 20%));
+    --gradient-stormy: linear-gradient(135deg, hsl(240 20% 15%), hsl(250 30% 10%));
+    --gradient-night: linear-gradient(135deg, hsl(240 30% 8%), hsl(250 40% 5%));
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

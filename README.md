@@ -48,7 +48,7 @@ src/
 
 1. **Prerequisites**
    - Node.js (Latest LTS version)
-   - Bun package manager
+   - npm package manager
 
 2. **Installation**
 
@@ -57,7 +57,7 @@ src/
    git clone https://github.com/Kennettechnologies/simplified-weather-app.git
    
    # Install dependencies
-   bun install
+   npm install
    ```
 
 3. **Environment Setup**
@@ -68,7 +68,7 @@ src/
 
    ```bash
    # Start development server
-   bun run dev
+   npm run dev
    ```
 
 5. **Building for Production**
@@ -80,11 +80,11 @@ src/
 
 ## Available Scripts
 
-- `bun run dev` - Start development server
-- `bun run build` - Create production build
-- `bun run build:dev` - Create development build
-- `bun run lint` - Run ESLint
-- `bun run preview` - Preview production build
+- `npm run dev` - Start development server
+- `npm run build` - Create production build
+- `npm run build:dev` - Create development build
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
 
 ## Project Components
 
@@ -153,22 +153,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 4. **Development**
    ```bash
    # Start development server
-   bun run dev
+   npm run dev
    ```
 
 5. **Building for Production**
    ```bash
    # Create production build
-   bun run build
+   npm run build
    ```
 
 ## Available Scripts
 
-- `bun run dev` - Start development server
-- `bun run build` - Create production build
-- `bun run build:dev` - Create development build
-- `bun run lint` - Run ESLint
-- `bun run preview` - Preview production build
+- `npm run dev` - Start development server
+- `npm run build` - Create production build
+- `npm run build:dev` - Create development build
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
 
 ## Project Components
 

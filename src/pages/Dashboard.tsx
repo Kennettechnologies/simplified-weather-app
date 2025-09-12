@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { 
   Cloud, 
   Sun, 
@@ -476,6 +477,7 @@ export default function Dashboard() {
             )}
           </div>
           <div className="flex gap-2">
+            <ThemeToggle />
             <Button variant="outline" size="icon" onClick={() => window.location.href = '/settings'} className="hover:scale-105 transition-transform">
               <Bell className="w-4 h-4" />
             </Button>

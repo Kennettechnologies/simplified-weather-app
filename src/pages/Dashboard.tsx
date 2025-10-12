@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { 
   Cloud, 
   Sun, 
@@ -99,12 +98,39 @@ export default function Dashboard() {
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [searchCity, setSearchCity] = useState('');
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string>('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'daily' | 'hourly'>('daily');
 
   useEffect(() => {
     loadCurrentLocationWeather();
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data?.full_name) {
+        setUserName(data.full_name);
+      } else {
+        // Fallback to email username if no full_name
+        setUserName(user.email?.split('@')[0] || 'User');
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      // Fallback to email username
+      setUserName(user.email?.split('@')[0] || 'User');
+    }
+  };
 
   const loadCurrentLocationWeather = async () => {
     setLoading(true);
@@ -468,7 +494,7 @@ export default function Dashboard() {
         {/* Enhanced Header */}
         <div className="flex justify-between items-center mb-6 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Welcome back, {user?.email?.split('@')[0]}</h1>
+            <h1 className="text-3xl font-bold text-foreground">Welcome back, {userName || user?.email?.split('@')[0]}</h1>
             <p className="text-muted-foreground">Your comprehensive weather dashboard</p>
             {weatherData && (
               <p className="text-sm text-muted-foreground mt-1">
@@ -477,7 +503,6 @@ export default function Dashboard() {
             )}
           </div>
           <div className="flex gap-2">
-            <ThemeToggle />
             <Button variant="outline" size="icon" onClick={() => window.location.href = '/settings'} className="hover:scale-105 transition-transform">
               <Bell className="w-4 h-4" />
             </Button>

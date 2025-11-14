@@ -1,69 +1,86 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// MongoDB Types for Weather App
 
-export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
-  }
-  public: {
-    Tables: {
-      customers: {
-        Row: {
-          address: string | null
-          created_at: string
-          credit_limit: number | null
-          current_balance: number | null
-          customer_name: string
-          customer_type: string
-          email: string | null
-          id: string
-          is_active: boolean
-          phone: string | null
-          updated_at: string
-        }
-        Insert: {
-          address?: string | null
-          created_at?: string
-          credit_limit?: number | null
-          current_balance?: number | null
-          customer_name: string
-          customer_type?: string
-          email?: string | null
-          id?: string
-          is_active?: boolean
-          phone?: string | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string | null
-          created_at?: string
-          credit_limit?: number | null
-          current_balance?: number | null
-          customer_name?: string
-          customer_type?: string
-          email?: string | null
-          id?: string
-          is_active?: boolean
-          phone?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      egg_production: {
-        Row: {
-          avg_egg_weight: number | null
-          created_at: string
-          eggs_collected: number
-          eggs_cracked: number | null
-          eggs_good: number | null
-          eggs_spoiled: number | null
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: 'farm_owner' | 'farm_manager' | 'veterinarian' | 'worker' | 'accountant' | 'customer';
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Session {
+  access_token: string;
+  user: User;
+  expires_at: number;
+}
+
+export interface SavedCity {
+  id: string;
+  user_id: string;
+  city_name: string;
+  country_code: string;
+  state_code?: string;
+  latitude: number;
+  longitude: number;
+  is_default: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  theme: string;
+  language: string;
+  temperature_unit: string;
+  wind_speed_unit: string;
+  notifications_enabled: boolean;
+  daily_forecast_push: boolean;
+  severe_weather_alerts: boolean;
+  default_city_id?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface WeatherData {
+  cityName: string;
+  location: string;
+  countryCode: string;
+  lat: number;
+  lon: number;
+  temperature: number;
+  description: string;
+  humidity: number;
+  windSpeed: number;
+  pressure: number;
+  visibility: number;
+  uvIndex: number;
+  feelsLike: number;
+  icon: string;
+}
+
+export interface WeatherAlert {
+  id: string;
+  user_id: string;
+  city_id: string;
+  alert_type: string;
+  severity: string;
+  title: string;
+  description: string;
+  start_time: Date;
+  end_time?: Date;
+  is_read: boolean;
+  created_at: Date;
+}
+
+export interface ApiResponse<T> {
+  data: T | null;
+  error: Error | null;
+}
+
           flock_id: string | null
           id: string
           notes: string | null

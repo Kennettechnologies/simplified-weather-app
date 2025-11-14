@@ -1,6 +1,24 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '' // Vercel will use relative paths
+  : import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// Define types to match our MongoDB implementation
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: string;
+  created_at: Date;
+}
+
+interface Session {
+  access_token: string;
+  user: User;
+  expires_at: number;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -21,72 +39,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    const storedSession = localStorage.getItem('auth_session');
+    if (storedSession) {
+      try {
+        const stored = JSON.parse(storedSession);
+        setSession(stored);
+        setUser(stored.user);
+      } catch {
+        localStorage.removeItem('auth_session');
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: userData
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: userData?.full_name || email.split('@')[0],
+          phone: userData?.phone,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { error: { message: data.error || 'Signup failed' } };
       }
-    });
-    return { error };
+
+      // We don't auto-login on signup; UI just shows toast
+      return { error: null };
+    } catch (err: any) {
+      return { error: { message: err.message || 'Signup failed' } };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { error: { message: data.error || 'Sign in failed' } };
+      }
+
+      const newSession: Session = {
+        access_token: data.token,
+        user: data.user,
+        expires_at: Date.now() + 1000 * 60 * 60, // 1 hour
+      };
+
+      setUser(data.user);
+      setSession(newSession);
+      localStorage.setItem('auth_session', JSON.stringify(newSession));
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: { message: err.message || 'Sign in failed' } };
+    }
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`
-      }
-    });
-    return { error };
+    return { error: { message: 'Google sign-in not implemented with MongoDB auth' } };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    setUser(null);
+    setSession(null);
+    localStorage.removeItem('auth_session');
+    return { error: null };
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/auth?mode=reset`;
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl
-    });
-    return { error };
+    return { error: { message: 'Password reset not implemented with MongoDB auth' } };
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     loading,

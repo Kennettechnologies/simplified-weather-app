@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mic, Send, Bot, User, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface Message {
   id: string;
@@ -51,14 +52,20 @@ export const WeatherAssistant: React.FC<WeatherAssistantProps> = ({
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('weather-assistant', {
-        body: { 
+      const response = await fetch(`${API_BASE_URL}/api/weather-assistant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
           message: message,
           weatherData: weatherData 
-        }
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Weather assistant API request failed');
+      }
+
+      const data = await response.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -70,9 +77,20 @@ export const WeatherAssistant: React.FC<WeatherAssistantProps> = ({
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Assistant error:', error);
+      
+      // Fallback response if API fails
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: `I'm having trouble connecting to my weather analysis service right now. However, based on the current weather data I can see: ${weatherData ? `It's ${weatherData.temperature}°C with ${weatherData.description} in ${weatherData.location}. The humidity is ${weatherData.humidity}% and wind speed is ${weatherData.windSpeed} m/s.` : 'Please load weather data first so I can help you better.'}`,
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, fallbackMessage]);
+      
       toast({
-        title: 'Error',
-        description: 'Failed to get response from weather assistant',
+        title: 'Connection Issue',
+        description: 'Using offline weather analysis. Some features may be limited.',
         variant: 'destructive'
       });
     } finally {
@@ -138,7 +156,7 @@ export const WeatherAssistant: React.FC<WeatherAssistantProps> = ({
   ];
 
   return (
-    <Card className={`bg-card/50 backdrop-blur-sm ${className}`}>
+    <Card className={`bg-card/50 backdrop-blur-sm border-primary/10 ${className}`}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="w-5 h-5 text-blue-500" />

@@ -1,156 +1,61 @@
 import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Layers, Cloud, Droplets, Wind, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { MapPin, Layers, Cloud, Droplets, Wind, Loader2, ExternalLink } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface WeatherMapProps {
   lat?: number;
   lon?: number;
+  city?: string;
   className?: string;
 }
 
 export const WeatherMap: React.FC<WeatherMapProps> = ({ 
   lat = 0, 
   lon = 0, 
+  city = "Unknown Location",
   className = "" 
 }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const [activeLayer, setActiveLayer] = useState<'precipitation' | 'clouds' | 'wind'>('precipitation');
   const [isLoading, setIsLoading] = useState(true);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
 
-  // Fetch Mapbox token from Supabase secrets
+  // Fetch Mapbox token from your Express API
   useEffect(() => {
     const fetchMapboxToken = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        if (error) throw error;
-        setMapboxToken(data?.token);
+        const response = await fetch(`${API_BASE_URL}/api/get-mapbox-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setMapboxToken(data.token);
+        } else {
+          throw new Error('Failed to fetch token');
+        }
       } catch (error) {
         console.error('Error fetching Mapbox token:', error);
-        // Fallback to a public demo token for development
-        setMapboxToken('pk.eyJ1IjoidGVzdCIsImEiOiJjbDl4M2p4ZDAwMDFvM29wZmc2ZWJjbWU4In0.test');
+        // Use a fallback - simple embedded map
+        setMapboxToken(null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchMapboxToken();
   }, []);
 
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || map.current) return;
-
-    // Initialize Mapbox
-    mapboxgl.accessToken = mapboxToken;
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-v9',
-      center: [lon, lat],
-      zoom: 8,
-      pitch: 0,
-      bearing: 0,
-    });
-
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    // Add marker for current location
-    new mapboxgl.Marker({ color: '#3b82f6' })
-      .setLngLat([lon, lat])
-      .addTo(map.current);
-
-    map.current.on('load', () => {
-      setIsLoading(false);
-      addWeatherLayers();
-    });
-
-    return () => {
-      map.current?.remove();
-    };
-  }, [lat, lon, mapboxToken]);
-
-  // Update weather layer when active layer changes
-  useEffect(() => {
-    if (map.current && !isLoading) {
-      updateWeatherLayer();
-    }
-  }, [activeLayer, isLoading]);
-
-  const addWeatherLayers = async () => {
-    if (!map.current) return;
-
-    // Get OpenWeatherMap API key from the weather function
-    let apiKey = 'demo'; // fallback
-    try {
-      const { data } = await supabase.functions.invoke('weather', { 
-        body: { getApiKey: true } 
-      });
-      if (data?.apiKey) apiKey = data.apiKey;
-    } catch (error) {
-      console.warn('Using demo API key for weather layers');
-    }
-
-    const layers = [
-      {
-        id: 'precipitation',
-        url: `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-      },
-      {
-        id: 'clouds',
-        url: `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-      },
-      {
-        id: 'wind',
-        url: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
-      }
-    ];
-
-    layers.forEach(layer => {
-      map.current!.addSource(layer.id, {
-        type: 'raster',
-        tiles: [layer.url],
-        tileSize: 256,
-        minzoom: 0,
-        maxzoom: 18,
-      });
-
-      map.current!.addLayer({
-        id: `${layer.id}-layer`,
-        type: 'raster',
-        source: layer.id,
-        paint: {
-          'raster-opacity': layer.id === activeLayer ? 0.7 : 0,
-        },
-      });
-    });
-  };
-
-  const updateWeatherLayer = () => {
-    if (!map.current) return;
-
-    ['precipitation', 'clouds', 'wind'].forEach(layerId => {
-      const layerName = `${layerId}-layer`;
-      if (map.current!.getLayer(layerName)) {
-        map.current!.setPaintProperty(
-          layerName,
-          'raster-opacity',
-          layerId === activeLayer ? 0.7 : 0
-        );
-      }
-    });
-  };
-
   const weatherLayers = [
     { 
       id: 'precipitation', 
-      label: 'Precipitation', 
+      label: 'Rain', 
       icon: Droplets, 
       color: 'text-blue-500',
-      description: 'Rain and snow intensity'
+      description: 'Precipitation forecast'
     },
     { 
       id: 'clouds', 
@@ -164,19 +69,58 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({
       label: 'Wind', 
       icon: Wind, 
       color: 'text-green-500',
-      description: 'Wind speed and direction'
+      description: 'Wind patterns'
     },
   ];
 
   const currentLayer = weatherLayers.find(layer => layer.id === activeLayer);
 
+  // Generate weather map URLs
+  const getWeatherMapUrl = () => {
+    const zoom = 8;
+    const centerLat = lat || 0;
+    const centerLon = lon || 0;
+    
+    return `https://openweathermap.org/weathermap?basemap=map&cities=true&layer=${activeLayer}&lat=${centerLat}&lon=${centerLon}&zoom=${zoom}`;
+  };
+
+  const getStaticMapUrl = () => {
+    const zoom = 10;
+    const width = 600;
+    const height = 300;
+    
+    // Using OpenStreetMap-based static map (free alternative)
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s-l+3b82f6(${lon},${lat})/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${mapboxToken}`;
+  };
+
+  if (isLoading) {
+    return (
+      <Card className={`bg-card/50 backdrop-blur-sm border-primary/10 ${className}`}>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Layers className="w-5 h-5" />
+            Interactive Weather Map
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full h-64 rounded-lg border bg-muted/20 flex items-center justify-center">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Loading map...</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card className={`bg-card/50 backdrop-blur-sm ${className}`}>
+    <Card className={`bg-card/50 backdrop-blur-sm border-primary/10 ${className}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Layers className="w-5 h-5" />
-            Interactive Weather Map
+            Weather Map - {city}
           </CardTitle>
           <div className="flex gap-1">
             {weatherLayers.map((layer) => (
@@ -196,37 +140,94 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="relative">
-          {isLoading && (
-            <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Loading map...</span>
+        <div className="space-y-4">
+          {/* Static Map Preview */}
+          {mapboxToken ? (
+            <div className="relative">
+              <img 
+                src={getStaticMapUrl()} 
+                alt={`Map of ${city}`}
+                className="w-full h-64 rounded-lg border object-cover"
+                onError={(e) => {
+                  // Fallback to simple placeholder
+                  e.currentTarget.src = `data:image/svg+xml,${encodeURIComponent(`
+                    <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="100%" height="100%" fill="#f1f5f9"/>
+                      <text x="50%" y="45%" text-anchor="middle" font-family="Arial" font-size="16" fill="#64748b">
+                        📍 ${city}
+                      </text>
+                      <text x="50%" y="55%" text-anchor="middle" font-family="Arial" font-size="12" fill="#94a3b8">
+                        ${lat.toFixed(4)}, ${lon.toFixed(4)}
+                      </text>
+                    </svg>
+                  `)}`;
+                }}
+              />
+              <div className="absolute top-2 right-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open(getWeatherMapUrl(), '_blank')}
+                  className="text-xs"
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  Full Map
+                </Button>
               </div>
             </div>
+          ) : (
+            // Simple fallback when no Mapbox token
+            <div className="w-full h-64 rounded-lg border bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-950/20 dark:to-green-950/20 flex flex-col items-center justify-center">
+              <MapPin className="w-12 h-12 text-primary mb-2" />
+              <h3 className="text-lg font-semibold">{city}</h3>
+              <p className="text-sm text-muted-foreground">
+                {lat.toFixed(4)}, {lon.toFixed(4)}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(getWeatherMapUrl(), '_blank')}
+                className="mt-3 text-xs"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                View Weather Map
+              </Button>
+            </div>
           )}
-          <div 
-            ref={mapContainer} 
-            className="w-full h-64 rounded-lg border"
-            style={{ minHeight: '256px' }}
-          />
-        </div>
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <currentLayer.icon className={`w-4 h-4 ${currentLayer.color}`} />
-            <span className="text-sm font-medium">
-              {currentLayer.label}: {currentLayer.description}
-            </span>
+
+          {/* Weather Layer Info */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <currentLayer.icon className={`w-4 h-4 ${currentLayer.color}`} />
+              <span className="text-sm font-medium">
+                {currentLayer.label}: {currentLayer.description}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3" />
+              {lat.toFixed(4)}, {lon.toFixed(4)}
+            </div>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="w-3 h-3" />
-            {lat.toFixed(4)}, {lon.toFixed(4)}
+
+          {/* Quick Actions */}
+          <div className="flex gap-2 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank')}
+              className="flex-1"
+            >
+              Google Maps
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(getWeatherMapUrl(), '_blank')}
+              className="flex-1"
+            >
+              Weather Radar
+            </Button>
           </div>
-        </div>
-        <div className="mt-2 text-center">
-          <p className="text-xs text-muted-foreground">
-            Real-time weather radar • Drag to pan • Scroll to zoom
-          </p>
         </div>
       </CardContent>
     </Card>
